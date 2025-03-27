@@ -5,6 +5,7 @@
 ## Error Handling
 
 - **[MUST]** Always check and handle errors returned by functions. Never ignore an error by assigning to `_` or otherwise discarding it. If a function returns an error, the code **MUST** verify success and either handle the error, return it up the call stack, or (in truly exceptional cases) trigger a panic ([Effective Go - The Go Programming Language](https://go.dev/doc/effective_go#:~:text=Occasionally%20you%27ll%20see%20code%20that,they%27re%20provided%20for%20a%20reason)) ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=Handle%20Errors)). **Rationale:** Ignoring errors causes missed failure conditions and unstable behavior.
+
   ```go
   // Bad Practice: error ignored, could cause a crash if path doesn't exist
   fi, _ := os.Stat(path)            // ignoring error
@@ -23,6 +24,7 @@
 - **[MUST]** Make error messages (the strings in error values) informative but concise, and format them in lower-case without trailing punctuation ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=Error%20strings%20should%20not%20be,not%20combined%20inside%20other%20messages)). This ensures errors composed or logged together read naturally. For example, use `fmt.Errorf("failed to load config")` *not* `fmt.Errorf("Failed to load config.")`.
 
 - **[SHOULD]** Prefer **early returns** for error handling to keep code visually linear and avoid deep nesting. Check for error cases and return as needed, so that the normal execution path is not indented inside an `else` block ([Go Code Review Comments · GitHub](https://gist.github.com/adamveld12/c0d9f0d5f0e1fba1e551#:~:text=Try%20to%20keep%20the%20normal,For%20instance%2C%20don%27t%20write)) ([Go Code Review Comments · GitHub](https://gist.github.com/adamveld12/c0d9f0d5f0e1fba1e551#:~:text=Instead%2C%20write%3A)). This makes code easier to follow by allowing the successful flow to proceed with minimal indentation.
+
   ```go
   // Bad: normal path is nested inside an else
   if err := doWork(); err != nil {
@@ -40,6 +42,7 @@
 
 - **[SHOULD]** Return errors or a separate status value rather than using “in-band” magic values to signal errors ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=Go%E2%80%99s%20support%20for%20multiple%20return,be%20the%20final%20return%20value)) ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=And%20encourages%20more%20robust%20and,readable%20code)). For example, a function that might fail **SHOULD** return an extra `error` or boolean rather than a special result like `-1` or `nil` to indicate failure. This avoids ambiguity and forces callers to handle the error explicitly.
   *Example:*
+
   ```go
   // Preferred: separate result and error/ok flag
   func Find(key string) (Value, bool) { … }
@@ -58,6 +61,7 @@
 
 - **[SHOULD]** Organize import statements into groups: standard library packages first, then third-party packages, with a blank line separating groups ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=Avoid%20renaming%20imports%20except%20to,specific%20import)) ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=)). This convention improves readability by clearly distinguishing built-in dependencies from external ones. Tools like `goimports` will do this automatically.
   *Example:*
+
   ```go
   import (
       "fmt"
@@ -75,6 +79,7 @@
 
 - **[MUST]** Write package documentation and comments for any exported function, type, or package-level variable/constant. Package comments (in a `doc.go` or at top of file) **SHOULD** provide an overview of the package’s purpose. Each exported item’s comment **MUST** form a complete sentence that begins with the item’s name ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=See%20https%3A%2F%2Fgo.dev%2Fdoc%2Feffective_go,and%20end%20in%20a%20period)), so that godoc renders it properly.
   *Example:*
+
   ```go
   // Encoder writes data in XYZ format.
   type Encoder struct { … }
@@ -129,6 +134,7 @@
 
 - **[MUST]** When you create a cancellable or timeout context (via `context.WithCancel`, `WithTimeout`, or `WithDeadline`), always call the cancel function in a `defer` when the context is no longer needed ([context package - context - Go Packages](https://pkg.go.dev/context#:~:text=The%20WithCancel%20%2C%20%2043%2C,flow%20paths)). Failing to call `cancel()` will **leak resources** (the context and any associated timers) until the parent context is canceled or the timeout fires ([context package - context - Go Packages](https://pkg.go.dev/context#:~:text=The%20WithCancel%20%2C%20%2043%2C,flow%20paths)). Even if you think the context will timeout naturally, defer the cancel to be safe.
   *Example:*
+
   ```go
   ctx, cancel := context.WithTimeout(parentCtx, 2*time.Second)
   defer cancel()  // ensure resources are freed, even if timeout occurs
@@ -146,6 +152,7 @@
 
 - **[SHOULD]** Make test failures **useful**. A failing test's output should clearly explain what was expected and what went wrong ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=Tests%20should%20fail%20with%20helpful,typical%20Go%20test%20fails%20like)). Prefer using `t.Errorf`/`t.Fatalf` with descriptive messages over plain `t.Fail()`. Include the inputs, the expected outcome, and the actual result in the message ([Go Wiki: Go Code Review Comments - The Go Programming Language](https://go.dev/wiki/CodeReviewComments#:~:text=Tests%20should%20fail%20with%20helpful,typical%20Go%20test%20fails%20like)). Assume the person debugging a failure is not familiar with the code – provide enough context.
   *Example:*
+
   ```go
   if got != want {
       t.Fatalf("Max(%d, %d) = %d; want %d", a, b, got, want)
@@ -203,7 +210,7 @@
 
 - **[SHOULD]** Write extensive tests for controllers. Since controllers embody complex logic and side effects, use **envtest** (from controller-runtime) or kind-based integration tests to run your reconcile logic against a real API server. Ensure your controller handles expected scenarios (create, update, delete events) and failure cases (API server errors, transient issues) robustly. Testing will also enforce that your reconcile is idempotent and behaves as expected.
 
-*(Technology-specific libraries and tools evolve quickly; the following sections reflect best practices as of 2025 and MAY become outdated – always refer to the latest official documentation for updates.)*
+(Technology-specific libraries and tools evolve quickly; the following sections reflect best practices as of 2025 and MAY become outdated – always refer to the latest official documentation for updates.)
 
 ## Logging and Metrics
 
@@ -237,4 +244,3 @@
 - Official Go Packages Documentation (go.dev) – e.g. `context` package guidelines ([context package - context - Go Packages](https://pkg.go.dev/context#:~:text=Do%20not%20pass%20a%20nil,about%20which%20Context%20to%20use)), `net/http` updates ([Routing Enhancements for Go 1.22 - The Go Programming Language](https://go.dev/blog/routing-enhancements#:~:text=We%20made%20these%20changes%20as,programs%20with%20advanced%20routing%20needs))
 - Kubernetes Documentation and Kubebuilder Book – Best practices for controllers and operators ([5.5 The Kubernetes Operator Metamodel - Kubernetes Operator Patterns and Best Practises Documentation](https://ibm.github.io/operator-sample-go-documentation/overview-the-k8s-operator-metamodel/#:~:text=nature%20of%20distributed%20Kubernetes%20systems,and%20gets%20events%20via%20filters)) ([Good Practices - The Kubebuilder Book](https://book.kubebuilder.io/reference/good-practices#:~:text=%E2%80%98install_all_controller))
 - GitHub Repositories (official) – e.g. GolangCI-Lint, Cobra, controller-runtime (for tool-specific guidance) ([GitHub - spf13/cobra: A Commander for modern Go CLI interactions](https://github.com/spf13/cobra#:~:text=Cobra%20is%20a%20library%20for,creating%20powerful%20modern%20CLI%20applications)) ([GitHub - kubernetes-sigs/controller-runtime: Repo for the controller-runtime subproject of kubebuilder (sig-apimachinery)](https://github.com/kubernetes-sigs/controller-runtime#:~:text=Kubernetes%20controller))
-

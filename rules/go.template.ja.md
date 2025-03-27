@@ -96,6 +96,7 @@
 - **[SHOULD]** テストが失敗した場合、その出力は何が期待されていて何が起きたのかを明確に伝えるべきである。`t.Errorf` や `t.Fatalf` を使い、入力・期待値・実際の出力を含めた説明を記述すること。
 
   例:
+
   ```go
   if got != want {
       t.Fatalf("Max(%d, %d) = %d; want %d", a, b, got, want)
@@ -211,4 +212,3 @@
   [Cobra](https://github.com/spf13/cobra)
   [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime)
   [golangci-lint](https://github.com/golangci/golangci-lint)
-
